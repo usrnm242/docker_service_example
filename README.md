@@ -9,9 +9,16 @@ Break using ctrl C.
 After that ./decompose.sh
 
 visit when service is active:
+
 127.0.0.1/logo.png
+
 127.0.0.1/var-and-peace.txt
+
 127.0.0.1/test
+
 127.0.0.1/cats
-127.0.0.1/dump  - after that goto ./storage/private and look at .txt file
-                  it is data from MySQL db that was inited in ./mysql/init/*.sql
+
+127.0.0.1/dump
+
+After that goto ./storage/private and look at .txt file.
+It is data from MySQL db that was inited in ./mysql/init/*.sql
