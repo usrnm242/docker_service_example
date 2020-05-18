@@ -1,0 +1,6 @@
+*.DS_Store
+mysql/data
+nginx-logs
+*.pyc
+storage/private
+.vscode

@@ -23,10 +23,11 @@ app = Quart(__name__)
 
 
 def get_connection():
+    # here we get variables from system's Environment
     return sql.connect(host='mysql',
-                       user='root',
-                       passwd=os.environ['MYSQL_ROOT_PASSWORD'],
-                       db='mysql',
+                       user=os.environ['MYSQL_USER'],
+                       passwd=os.environ['MYSQL_PASSWORD'],
+                       db=os.environ['MYSQL_DATABASE'],
                        charset='utf8mb4',
                        autocommit=True)
 
@@ -40,8 +41,8 @@ async def index():
 @app.route("/dump", methods=['GET'])
 async def mysqldump():
     private_db = "/quart_database/private"
-    # in container
-    # in real filesystem it is ...../service_example/storage/private
+    # in container's filesystem
+    # in host filesystem it is ../service_example/storage/private
 
     try:
         conn = get_connection()
@@ -53,7 +54,7 @@ async def mysqldump():
                 # but it is unsafe
                 # "USE %s; " doesnt work here
 
-                query = "SELECT * FROM users WHERE mark > %s; "
+                query = "SELECT * FROM users WHERE mark > %s LIMIT 3; "
                 args = (2, )
                 cur.execute(query, args)
 
@@ -68,7 +69,7 @@ async def mysqldump():
             return str(e)
 
     else:
-        return 'look for a new file in /quart_database/private/templates'
+        return 'look for a new file in private_db'
 
 
 @app.route('/testing', methods=['GET'])
@@ -77,7 +78,7 @@ async def test():
 
 
 def main():
-    # do not use it
+    # do not use it in deploy
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 

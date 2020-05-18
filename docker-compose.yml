@@ -1,28 +1,18 @@
 version: "3"
 
 services:
-  quart_server:
-    container_name: quart_server
-    build: quart_app/
-    restart: always
-    command: hypercorn -b 0.0.0.0:5000 ./quart_app:app
-    # hypercorn is ASGI server for deploy
-    links:
-      - mysql:mysql
-    volumes:
-      - ./quart_app:/usr/src/quart_app:ro
-      - ./storage/private:/quart_database/private
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-
   nginx:
     image: nginx:1.18-alpine
-    container_name: nginx
+    container_name: nginx  # Docker writes this name to /etc/hosts
+                           # So inside localhost there is a new host
+                           # with name 'quart_server'
     restart: always
     ports:
-      - 80:8080
+      - 80:8080  # docker redirects ports from:to
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+        # dirs that container can see from its filesystem
+        # sth like mounting directory
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx-logs:/var/log/nginx
       - ./storage/static-data:/usr/share/nginx/html:ro
       # :ro means read-only
@@ -31,8 +21,27 @@ services:
     command: [nginx, '-g', 'daemon off;']
     # daemon off because docker is already works in daemon mode
 
+  quart_server:
+    container_name: quart_server
+    build: quart_app/
+    restart: always
+    command: hypercorn -b 0.0.0.0:5000 ./quart_app:app
+    # hypercorn is ASGI server for deploy
+    ports:
+      - 5000:5000
+    links:
+      - mysql:mysql
+    volumes:
+      - ./quart_app:/usr/src/quart_app:ro
+      - ./storage/private:/quart_database/private
+    environment:
+      MYSQL_USER: my_user
+      MYSQL_PASSWORD: my_user_password
+      MYSQL_DATABASE: users_db
+
   mysql:
-    image: mysql:8
+    image: mysql:8.0.20
+    container_name: mysql
     restart: always
     ports:
       - "3307:3306"
@@ -40,11 +49,7 @@ services:
       - ./mysql/data:/var/lib/mysql
       - ./mysql/init:/docker-entrypoint-initdb.d/:ro
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: my_user
+      MYSQL_PASSWORD: my_user_password
       MYSQL_DATABASE: users_db
-
-  # adminer:
-  #     image: adminer
-  #     restart: always
-  #     ports:
-  #       - 8091:8091
