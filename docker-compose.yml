@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 
 services:
   nginx:
@@ -9,6 +9,8 @@ services:
     restart: always
     ports:
       - 80:8080  # docker redirects ports from:to
+    security_opt:
+      - seccomp:./default_seccomp.json
     volumes:
         # dirs that container can see from its filesystem
         # sth like mounting directory
@@ -18,12 +20,28 @@ services:
       # :ro means read-only
     links:
       - quart_server
+    deploy:  # this section works only with docker stack deploy
+      resources:
+        # to avoid 'Denial of service'
+        limits:
+          cpus: '0.50'
+          memory: 100M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     command: [nginx, '-g', 'daemon off;']
     # daemon off because docker is already works in daemon mode
 
   quart_server:
     container_name: quart_server
     build: quart_app/
+    security_opt:
+      - seccomp:./default_seccomp.json
     restart: always
     command: hypercorn -b 0.0.0.0:5000 ./quart_app:app
     # hypercorn is ASGI server for deploy
@@ -38,11 +56,25 @@ services:
       MYSQL_USER: my_user
       MYSQL_PASSWORD: my_user_password
       MYSQL_DATABASE: users_db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.70'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   mysql:
     image: mysql:8.0.20
     container_name: mysql
-    restart: always
+    security_opt:
+      - seccomp:./default_seccomp.json
     ports:
       - "3307:3306"
     volumes:
@@ -53,3 +85,16 @@ services:
       MYSQL_USER: my_user
       MYSQL_PASSWORD: my_user_password
       MYSQL_DATABASE: users_db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 100M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
